@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Person;
 use App\Models\Employee;
-//Prova
+
 class AdminController extends BaseController
 {
     public function signup()
