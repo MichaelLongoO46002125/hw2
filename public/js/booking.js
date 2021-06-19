@@ -63,6 +63,12 @@ function nextPhoto(event)
             event.currentTarget.parentNode.querySelector('[data-photo-room-id="'+ roomID + index +'"]').classList.remove("hidden");
             event.currentTarget.parentNode.querySelector(".num-photo").textContent = (index+1) + "/" + photos.length;
         }
+
+        if(index === photos.length-1)
+            event.currentTarget.classList.add("hidden");
+
+        if(index > 0)
+            event.currentTarget.parentNode.querySelector('[data-prev-photo-room-id="' + roomID + '"]').classList.remove("hidden");
     }
 }
 
@@ -96,6 +102,12 @@ function prevPhoto(event)
             event.currentTarget.parentNode.querySelector('[data-photo-room-id="'+ roomID + index +'"]').classList.remove("hidden");
             event.currentTarget.parentNode.querySelector(".num-photo").textContent = (index+1) + "/" + photos.length;
         }
+
+        if(index === 0)
+            event.currentTarget.classList.add("hidden");
+
+        if(index < photos.length-1)
+            event.currentTarget.parentNode.querySelector('[data-next-photo-room-id="' + roomID + '"]').classList.remove("hidden");
     }
 }
 
@@ -135,6 +147,7 @@ function createRoom(room)
 
             btn= document.createElement("div");
             btn.classList.add("prev-photo");
+            btn.classList.add("hidden");
             btn.addEventListener('click',prevPhoto);
             btn.dataset.prevPhotoRoomId = room.roomNumber;
             imgCont.appendChild(btn);

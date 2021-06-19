@@ -2,7 +2,9 @@ const contentSec = document.querySelector('section[data-sec="content-sec"]');
 const favSec= document.querySelector('section[data-sec="fav-sec"]');
 const favList= favSec.querySelector('.fav-list');
 const contentMsg= document.querySelector('[data-cont-msg="msg"]');
+const contPrev= document.querySelector('[data-btn="cont-prev"]');
 const contNext= document.querySelector('[data-btn="cont-next"]');
+const favPrev= document.querySelector('[data-btn="fav-prev"]');
 const favNext= document.querySelector('[data-btn="fav-next"]');
 const searchBar= document.forms["search-form"].search_bar;
 const contentPageSize=4;
@@ -34,6 +36,38 @@ function searchByID(ID) {
     }
 
     return null;
+}
+
+function favoriteButtonManager()
+{
+    if(favOffset == 0)
+        favPrev.classList.add("hidden");
+    else
+        favPrev.classList.remove("hidden");
+
+    if(
+        (favOffset >= viewableFav.length-favPageSize && otherFav) ||
+        (favOffset < viewableFav.length-favPageSize)
+    )
+        favNext.classList.remove("hidden");
+    else if( favOffset >= viewableFav.length-favPageSize )
+        favNext.classList.add("hidden");
+}
+
+function contentButtonManager()
+{
+    if(contentsOffset == 0)
+        contPrev.classList.add("hidden");
+    else
+        contPrev.classList.remove("hidden");
+
+    if(
+        (contentsOffset >= viewableContent.length-contentPageSize && otherCont) ||
+        (contentsOffset < viewableContent.length-contentPageSize)
+    )
+        contNext.classList.remove("hidden");
+    else if( contentsOffset >= viewableContent.length-contentPageSize )
+        contNext.classList.add("hidden");
 }
 
 function removeContent(cont)
@@ -86,18 +120,13 @@ function removeFavorite(id)
         viewableFav.splice(i, 1);
         favorites.splice(i, 1);
 
-        if( viewableFav.length > 0 && viewableFav.length < 3 && otherCont)
+        if( viewableFav.length > 0 && viewableFav.length < favPageSize && otherFav)
         {
             fetch(routeFetchFavorites + "/num/1/offset/" + viewableFav.length).then(onResponse).then(onLoadFavoriteJSON);
         }
         else if(viewableFav.length === 0)
         {
-            if(otherFav)
-            {
-                fetch(routeFetchFavorites).then(onResponse).then(onLoadFavoriteJSON);
-            }
-            else
-                favSec.classList.add('hidden');
+            favSec.classList.add('hidden');
         }
     }
 }
@@ -293,7 +322,7 @@ function remFav(event)
                 'Content-Type': 'application/json'
             }
         };
-        fetch(routeRemoveFavorite, options).then(onResponse).then(onRemFavJSON);
+        fetch(routeRemoveFavorite, options).then(onResponse).then(onRemFavJSON).then(favoriteButtonManager);
     }
     else
     {
@@ -315,7 +344,7 @@ function remFav(event)
                 'Content-Type': 'application/json'
             }
         };
-        fetch(routeRemoveFavorite, options).then(onResponse).then(onRemFavJSON);
+        fetch(routeRemoveFavorite, options).then(onResponse).then(onRemFavJSON).then(favoriteButtonManager);
     }
 }
 
@@ -367,7 +396,7 @@ function addFav(event)
         }
     };
 
-    fetch(routeAddFavorite, options).then(onResponse).then(onAddFavJSON);
+    fetch(routeAddFavorite, options).then(onResponse).then(onAddFavJSON).then(favoriteButtonManager);
 }
 
 //Listener per i pulsanti prossimo/precedente preferito
@@ -389,10 +418,13 @@ function onNextFav(){
     if(favOffset >= viewableFav.length-favPageSize && otherFav)
     {
         fetch(routeFetchFavorites + "/num/3/offset/" + favorites.length)
-            .then(onResponse).then(onLoadFavoriteJSON).then(showNextFav);
+            .then(onResponse).then(onLoadFavoriteJSON).then(showNextFav).then(favoriteButtonManager);
     }
     else
+    {
         showNextFav(true);
+        favoriteButtonManager();
+    }
 }
 
 function onPrevFav(){
@@ -401,6 +433,7 @@ function onPrevFav(){
         favOffset--;
         favList.querySelector('[data-fav-id="' + viewableFav[favOffset+favPageSize] + '"]').classList.add('hidden');
         favList.querySelector('[data-fav-id="' + viewableFav[favOffset] + '"]').classList.remove('hidden');
+        favoriteButtonManager();
     }
 }
 
@@ -427,13 +460,16 @@ function onNextCont(){
     {
         if(searchTitle != "")
             fetch(routeFetchContents + "/num/" + contentPageSize + "/offset/" + contents.length + "/title/" + encodeURIComponent(searchTitle))
-                .then(onResponse).then(onLoadContentJSON).then(showNextCont);
+                .then(onResponse).then(onLoadContentJSON).then(showNextCont).then(contentButtonManager);
         else
             fetch(routeFetchContents + "/num/" + contentPageSize + "/offset/" + contents.length)
-                .then(onResponse).then(onLoadContentJSON).then(showNextCont);
+                .then(onResponse).then(onLoadContentJSON).then(showNextCont).then(contentButtonManager);
     }
     else
+    {
         showNextCont(true);
+        contentButtonManager();
+    }
 }
 
 function onPrevCont(){
@@ -446,6 +482,8 @@ function onPrevCont(){
 
         contentSec.querySelector('[data-content-id="' + viewableContent[contentsOffset] + '"]')
             .classList.remove('hidden');
+
+        contentButtonManager();
     }
 }
 
@@ -486,7 +524,7 @@ function searchContents(event)
         otherCont= true;
         resetContents();
         searchTitle= "";
-        fetch(routeFetchContents).then(onResponse).then(onLoadContentJSON);
+        fetch(routeFetchContents).then(onResponse).then(onLoadContentJSON).then(contentButtonManager);
     }
     else if(search != searchTitle)
     {
@@ -496,7 +534,7 @@ function searchContents(event)
         searchTitle= search;
 
         fetch(routeFetchContents + "/num/" + contentPageSize + "/offset/0/title/" + encodeURIComponent(searchTitle))
-            .then(onResponse).then(onLoadContentJSON);
+            .then(onResponse).then(onLoadContentJSON).then(contentButtonManager);
     }
 }
 
@@ -518,6 +556,9 @@ function onLoadContentJSON(json)
         otherCont= false;
         return false;
     }
+
+    if(json.contents.length<contentPageSize)
+        otherCont = false;
 
     if( contents !== null )
     {
@@ -558,7 +599,7 @@ function onLoadFavoriteJSON(json)
         return false;
     }
 
-    if(json.favorites.length<3)
+    if(json.favorites.length<favPageSize)
         otherFav = false;
 
     if( favorites !== null )
@@ -592,8 +633,8 @@ function onResponse(response)
 
 //MAIN
 
-fetch(routeFetchContents).then(onResponse).then(onLoadContentJSON);
-fetch(routeFetchFavorites).then(onResponse).then(onLoadFavoriteJSON);
+fetch(routeFetchContents).then(onResponse).then(onLoadContentJSON).then(contentButtonManager);
+fetch(routeFetchFavorites).then(onResponse).then(onLoadFavoriteJSON).then(favoriteButtonManager);
 
 document.forms["search-form"].addEventListener('submit', searchContents);
 
